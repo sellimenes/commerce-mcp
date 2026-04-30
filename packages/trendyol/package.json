@@ -1,0 +1,38 @@
+{
+  "name": "@commerce-mcp/trendyol",
+  "version": "0.1.0",
+  "description": "Trendyol Marketplace MCP server",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "trendyol-mcp": "./dist/bin/trendyol-mcp.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "drizzle"],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/bin/trendyol-mcp.ts",
+    "seed": "tsx src/db/seed.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@commerce-mcp/core": "*",
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "axios": "^1.7.9",
+    "better-sqlite3": "^11.7.0",
+    "drizzle-orm": "^0.38.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "drizzle-kit": "^0.30.1"
+  }
+}
