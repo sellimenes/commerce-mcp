@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { defaultDbPath, openDb } from './client.js';
+import { applyMigrations } from './migrate.js';
 import {
   brands,
   categories,
@@ -11,7 +12,6 @@ import {
   shipmentPackages,
   shipmentProviders,
 } from './schema.js';
-import { applyMigrations } from './migrate.js';
 
 interface SeedCategory {
   id: number;
@@ -63,16 +63,58 @@ const STATUS_DISTRIBUTION: Array<[string, number]> = [
 ];
 
 const TR_FIRST_NAMES = [
-  'Ahmet', 'Ayşe', 'Mehmet', 'Fatma', 'Mustafa', 'Zeynep', 'Ali', 'Elif',
-  'Hüseyin', 'Emine', 'Hasan', 'Hatice', 'İbrahim', 'Merve', 'Osman', 'Selin',
-  'Yusuf', 'Esra', 'Murat', 'Büşra', 'Emre', 'Seda',
+  'Ahmet',
+  'Ayşe',
+  'Mehmet',
+  'Fatma',
+  'Mustafa',
+  'Zeynep',
+  'Ali',
+  'Elif',
+  'Hüseyin',
+  'Emine',
+  'Hasan',
+  'Hatice',
+  'İbrahim',
+  'Merve',
+  'Osman',
+  'Selin',
+  'Yusuf',
+  'Esra',
+  'Murat',
+  'Büşra',
+  'Emre',
+  'Seda',
 ];
 const TR_LAST_NAMES = [
-  'Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Yıldırım', 'Öztürk',
-  'Aydın', 'Özdemir', 'Arslan', 'Doğan', 'Kılıç', 'Aslan', 'Çetin', 'Kara',
+  'Yılmaz',
+  'Kaya',
+  'Demir',
+  'Şahin',
+  'Çelik',
+  'Yıldız',
+  'Yıldırım',
+  'Öztürk',
+  'Aydın',
+  'Özdemir',
+  'Arslan',
+  'Doğan',
+  'Kılıç',
+  'Aslan',
+  'Çetin',
+  'Kara',
 ];
 
-const TR_CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya', 'Gaziantep'];
+const TR_CITIES = [
+  'İstanbul',
+  'Ankara',
+  'İzmir',
+  'Bursa',
+  'Antalya',
+  'Adana',
+  'Konya',
+  'Gaziantep',
+];
 
 const PRODUCT_TEMPLATES = [
   { title: 'iPhone 15 Pro Max 256GB', categoryId: 2, brandId: 1, basePrice: 64999 },
@@ -90,8 +132,7 @@ const PRODUCT_TEMPLATES = [
 ];
 
 function rand<T>(arr: readonly T[]): T {
-  // biome-ignore lint/style/noNonNullAssertion: arr is non-empty by construction
-  return arr[Math.floor(Math.random() * arr.length)]!;
+  return mustGet(arr, Math.floor(Math.random() * arr.length), 'Cannot pick from an empty array.');
 }
 
 function randInt(min: number, max: number): number {
@@ -104,6 +145,12 @@ function pad(n: number, width: number): string {
 
 function generateBarcode(seed: number): string {
   return `869${pad(seed, 10)}`;
+}
+
+function mustGet<T>(arr: readonly T[], index: number, message: string): T {
+  const value = arr[index];
+  if (!value) throw new Error(message);
+  return value;
 }
 
 function daysAgo(days: number): Date {
@@ -140,9 +187,12 @@ export function seed(opts: { fresh?: boolean; path?: string } = {}): void {
 
   // Products: 80 total, alternating approved
   const productRows: (typeof products.$inferInsert)[] = [];
-  const now = new Date();
   for (let i = 0; i < 80; i++) {
-    const tpl = PRODUCT_TEMPLATES[i % PRODUCT_TEMPLATES.length]!;
+    const tpl = mustGet(
+      PRODUCT_TEMPLATES,
+      i % PRODUCT_TEMPLATES.length,
+      'Missing product template.',
+    );
     const variant = Math.floor(i / PRODUCT_TEMPLATES.length) + 1;
     const productMainId = `PMI${pad(1000 + i, 6)}`;
     const listPrice = tpl.basePrice * (1 + Math.random() * 0.3);
@@ -161,7 +211,10 @@ export function seed(opts: { fresh?: boolean; path?: string } = {}): void {
       approved: i % 2 === 0,
       vatRate: 20,
       dimensionalWeight: Math.round((0.5 + Math.random() * 5) * 100) / 100,
-      attributes: { renk: rand(['Siyah', 'Beyaz', 'Mavi', 'Kırmızı']), beden: rand(['S', 'M', 'L', 'XL']) },
+      attributes: {
+        renk: rand(['Siyah', 'Beyaz', 'Mavi', 'Kırmızı']),
+        beden: rand(['S', 'M', 'L', 'XL']),
+      },
       createdAt: daysAgo(randInt(30, 180)),
       updatedAt: daysAgo(randInt(0, 30)),
     });
@@ -183,7 +236,11 @@ export function seed(opts: { fresh?: boolean; path?: string } = {}): void {
       let total = 0;
       const items: (typeof orderItems.$inferInsert)[] = [];
       for (let j = 0; j < itemCount; j++) {
-        const product = productRows[randInt(0, productRows.length - 1)]!;
+        const product = mustGet(
+          productRows,
+          randInt(0, productRows.length - 1),
+          'Missing generated product.',
+        );
         const qty = randInt(1, 3);
         const price = product.salePrice;
         total += qty * price;
@@ -195,36 +252,44 @@ export function seed(opts: { fresh?: boolean; path?: string } = {}): void {
           productName: product.title,
           quantity: qty,
           price: Math.round(price * 100) / 100,
-          status: status === 'Cancelled' ? 'Cancelled' : status === 'Returned' ? 'Returned' : 'Created',
+          status:
+            status === 'Cancelled' ? 'Cancelled' : status === 'Returned' ? 'Returned' : 'Created',
         });
       }
-      const ageDays = status === 'Delivered' ? randInt(7, 25) : status === 'Returned' ? randInt(15, 40) : randInt(0, 7);
+      const ageDays =
+        status === 'Delivered'
+          ? randInt(7, 25)
+          : status === 'Returned'
+            ? randInt(15, 40)
+            : randInt(0, 7);
       const createdAt = daysAgo(ageDays);
       const provider = rand(SEED_PROVIDERS);
       const hasTracking = ['Shipped', 'Delivered', 'Returned'].includes(status);
-      db.insert(shipmentPackages).values({
-        packageId,
-        orderId,
-        orderNumber: `TY${pad(orderId, 12)}`,
-        status,
-        customerName,
-        totalPrice: Math.round(total * 100) / 100,
-        currency: 'TRY',
-        cargoTrackingNumber: hasTracking ? `${pad(randInt(1, 9_999_999_999), 10)}` : null,
-        cargoProviderCode: hasTracking ? provider.code : null,
-        cargoProviderName: hasTracking ? provider.name : null,
-        shipmentAddress: {
-          firstName: customerName.split(' ')[0],
-          lastName: customerName.split(' ')[1],
-          fullAddress: `${rand(['Atatürk', 'İstiklal', 'Cumhuriyet', 'Mevlana'])} Cad. No:${randInt(1, 200)} D:${randInt(1, 30)}`,
-          city: rand(TR_CITIES),
-          district: rand(['Kadıköy', 'Beşiktaş', 'Çankaya', 'Konak', 'Nilüfer', 'Muratpaşa']),
-          postalCode: pad(randInt(10000, 99999), 5),
-          phone: `05${pad(randInt(0, 9_999_999_999), 9)}`,
-        },
-        createdAt,
-        lastModifiedAt: daysAgo(randInt(0, ageDays)),
-      }).run();
+      db.insert(shipmentPackages)
+        .values({
+          packageId,
+          orderId,
+          orderNumber: `TY${pad(orderId, 12)}`,
+          status,
+          customerName,
+          totalPrice: Math.round(total * 100) / 100,
+          currency: 'TRY',
+          cargoTrackingNumber: hasTracking ? `${pad(randInt(1, 9_999_999_999), 10)}` : null,
+          cargoProviderCode: hasTracking ? provider.code : null,
+          cargoProviderName: hasTracking ? provider.name : null,
+          shipmentAddress: {
+            firstName: customerName.split(' ')[0],
+            lastName: customerName.split(' ')[1],
+            fullAddress: `${rand(['Atatürk', 'İstiklal', 'Cumhuriyet', 'Mevlana'])} Cad. No:${randInt(1, 200)} D:${randInt(1, 30)}`,
+            city: rand(TR_CITIES),
+            district: rand(['Kadıköy', 'Beşiktaş', 'Çankaya', 'Konak', 'Nilüfer', 'Muratpaşa']),
+            postalCode: pad(randInt(10000, 99999), 5),
+            phone: `05${pad(randInt(0, 9_999_999_999), 9)}`,
+          },
+          createdAt,
+          lastModifiedAt: daysAgo(randInt(0, ageDays)),
+        })
+        .run();
       db.insert(orderItems).values(items).run();
       allPackages.push(packageId);
     }
@@ -245,18 +310,26 @@ export function seed(opts: { fresh?: boolean; path?: string } = {}): void {
     'Bu ürün su geçirmez mi?',
   ];
   for (let i = 0; i < 25; i++) {
-    const product = productList[randInt(0, productList.length - 1)]!;
+    const product = mustGet(
+      productList,
+      randInt(0, productList.length - 1),
+      'Missing generated product.',
+    );
     const answered = i >= 15;
     const createdAt = daysAgo(randInt(0, 13));
-    db.insert(questions).values({
-      productMainId: product.productMainId,
-      customerName: rand(TR_FIRST_NAMES),
-      text: rand(questionTexts),
-      answer: answered ? 'Merhaba, ürün stoklarımızda mevcut, sipariş sonrası 1 iş günü içinde kargoya verilir.' : null,
-      status: answered ? 'ANSWERED' : 'WAITING_FOR_ANSWER',
-      createdAt,
-      answeredAt: answered ? new Date(createdAt.getTime() + randInt(1, 24) * 3_600_000) : null,
-    }).run();
+    db.insert(questions)
+      .values({
+        productMainId: product.productMainId,
+        customerName: rand(TR_FIRST_NAMES),
+        text: rand(questionTexts),
+        answer: answered
+          ? 'Merhaba, ürün stoklarımızda mevcut, sipariş sonrası 1 iş günü içinde kargoya verilir.'
+          : null,
+        status: answered ? 'ANSWERED' : 'WAITING_FOR_ANSWER',
+        createdAt,
+        answeredAt: answered ? new Date(createdAt.getTime() + randInt(1, 24) * 3_600_000) : null,
+      })
+      .run();
   }
 
   // Claims: 6
@@ -270,33 +343,39 @@ export function seed(opts: { fresh?: boolean; path?: string } = {}): void {
     'Kalitesi beklediğim gibi değil',
   ];
   for (let i = 0; i < 6; i++) {
-    const packageId = deliveredOrReturned[i % deliveredOrReturned.length]!;
+    const packageId = mustGet(
+      deliveredOrReturned,
+      i % deliveredOrReturned.length,
+      'Missing package for claim.',
+    );
     const items = db.select().from(orderItems).where(orderItemsByPackage(packageId)).all();
     if (items.length === 0) continue;
-    const item = items[0]!;
-    db.insert(claims).values({
-      id: `CLM${pad(50000 + i, 8)}`,
-      packageId,
-      orderLineItemId: item.orderLineItemId,
-      productMainId: item.productMainId,
-      productName: item.productName,
-      status: i < 3 ? 'Created' : i < 5 ? 'WaitingInAction' : 'Accepted',
-      reason: rand(claimReasons),
-      customerNote: i % 2 === 0 ? 'Lütfen değişim yapılmasını rica ediyorum.' : null,
-      createdAt: daysAgo(randInt(1, 14)),
-    }).run();
+    const item = items[0];
+    if (!item) continue;
+    db.insert(claims)
+      .values({
+        id: `CLM${pad(50000 + i, 8)}`,
+        packageId,
+        orderLineItemId: item.orderLineItemId,
+        productMainId: item.productMainId,
+        productName: item.productName,
+        status: i < 3 ? 'Created' : i < 5 ? 'WaitingInAction' : 'Accepted',
+        reason: rand(claimReasons),
+        customerNote: i % 2 === 0 ? 'Lütfen değişim yapılmasını rica ediyorum.' : null,
+        createdAt: daysAgo(randInt(1, 14)),
+      })
+      .run();
   }
 
   raw.close();
 
-  // biome-ignore lint/suspicious/noConsole: seed CLI prints to stdout intentionally
   console.error(
-    `[seed] populated ${path}\n` +
-      `       products: ${productRows.length}\n` +
-      `       shipment_packages: ${allPackages.length}\n` +
-      `       questions: 25 (15 unanswered)\n` +
-      `       claims: 6\n` +
-      `       categories: ${SEED_CATEGORIES.length}, brands: ${SEED_BRANDS.length}, providers: ${SEED_PROVIDERS.length}`,
+    `[seed] populated ${path}
+       products: ${productRows.length}
+       shipment_packages: ${allPackages.length}
+       questions: 25 (15 unanswered)
+       claims: 6
+       categories: ${SEED_CATEGORIES.length}, brands: ${SEED_BRANDS.length}, providers: ${SEED_PROVIDERS.length}`,
   );
 }
 

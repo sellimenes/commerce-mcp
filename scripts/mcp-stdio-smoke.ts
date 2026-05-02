@@ -21,7 +21,9 @@ interface RpcResponse {
 }
 
 const log = (msg: string, data?: unknown) =>
-  process.stderr.write(`[mcp-smoke] ${msg}${data !== undefined ? ': ' + JSON.stringify(data) : ''}\n`);
+  process.stderr.write(
+    `[mcp-smoke] ${msg}${data !== undefined ? `: ${JSON.stringify(data)}` : ''}\n`,
+  );
 
 function fail(msg: string): never {
   process.stderr.write(`[mcp-smoke] FAIL — ${msg}\n`);
@@ -41,8 +43,8 @@ async function main() {
 
   child.stdout.on('data', (chunk) => {
     stdoutBuffer += chunk.toString('utf-8');
-    let idx;
-    while ((idx = stdoutBuffer.indexOf('\n')) >= 0) {
+    let idx = stdoutBuffer.indexOf('\n');
+    while (idx >= 0) {
       const line = stdoutBuffer.slice(0, idx).trim();
       stdoutBuffer = stdoutBuffer.slice(idx + 1);
       if (!line) continue;
@@ -52,6 +54,7 @@ async function main() {
       } catch {
         stdoutNonJsonChunks.push(line);
       }
+      idx = stdoutBuffer.indexOf('\n');
     }
   });
 
@@ -61,7 +64,7 @@ async function main() {
   });
 
   const send = (req: RpcRequest) => {
-    child.stdin.write(JSON.stringify(req) + '\n');
+    child.stdin.write(`${JSON.stringify(req)}\n`);
   };
   const waitFor = async (id: number, timeoutMs = 5000): Promise<RpcResponse> => {
     const start = Date.now();
@@ -94,8 +97,11 @@ async function main() {
   if (listRes.error) fail(`tools/list errored: ${listRes.error.message}`);
   const tools = (listRes.result as { tools: { name: string }[] }).tools;
   log(`tools/list returned ${tools.length} tools`);
-  log('names', tools.map((t) => t.name));
-  if (tools.length !== 13) fail(`expected 13 tools, got ${tools.length}`);
+  log(
+    'names',
+    tools.map((t) => t.name),
+  );
+  if (tools.length !== 21) fail(`expected 21 tools, got ${tools.length}`);
 
   send({
     jsonrpc: '2.0',
@@ -105,8 +111,9 @@ async function main() {
   });
   const ordersCall = await waitFor(3);
   if (ordersCall.error) fail(`orders_list errored: ${ordersCall.error.message}`);
-  const ordersText = ((ordersCall.result as { content: { type: string; text: string }[] }).content[0]?.text) ?? '';
-  log('orders_list snippet:', ordersText.slice(0, 80) + '...');
+  const ordersText =
+    (ordersCall.result as { content: { type: string; text: string }[] }).content[0]?.text ?? '';
+  log('orders_list snippet:', `${ordersText.slice(0, 80)}...`);
 
   send({
     jsonrpc: '2.0',
@@ -116,24 +123,32 @@ async function main() {
   });
   const provsCall = await waitFor(4);
   if (provsCall.error) fail(`shipment_providers_list errored: ${provsCall.error.message}`);
-  log('shipment_providers result first line:', ((provsCall.result as { content: { text: string }[] }).content[0]?.text ?? '').split('\n')[0]);
+  log(
+    'shipment_providers result first line:',
+    ((provsCall.result as { content: { text: string }[] }).content[0]?.text ?? '').split('\n')[0],
+  );
 
   send({
     jsonrpc: '2.0',
     id: 5,
     method: 'tools/call',
     params: {
-      name: 'inventory_update',
+      name: 'preview_inventory_update',
       arguments: { items: [{ barcode: '8690000000001', quantity: 42 }] },
     },
   });
   const invCall = await waitFor(5);
-  if (invCall.error) fail(`inventory_update errored: ${invCall.error.message}`);
-  log('inventory_update first line:', ((invCall.result as { content: { text: string }[] }).content[0]?.text ?? '').split('\n')[0]);
+  if (invCall.error) fail(`preview_inventory_update errored: ${invCall.error.message}`);
+  log(
+    'preview_inventory_update first line:',
+    ((invCall.result as { content: { text: string }[] }).content[0]?.text ?? '').split('\n')[0],
+  );
 
   // Stdout cleanliness check — every line should have been valid JSON-RPC.
   if (stdoutNonJsonChunks.length > 0) {
-    fail(`Non-JSON output detected on stdout (would corrupt MCP):\n${stdoutNonJsonChunks.join('\n')}`);
+    fail(
+      `Non-JSON output detected on stdout (would corrupt MCP):\n${stdoutNonJsonChunks.join('\n')}`,
+    );
   }
 
   log('stderr (first 200 chars):', stderrAccum.slice(0, 200));
@@ -146,6 +161,6 @@ async function main() {
 
 main().catch((err) => {
   process.stderr.write(`[mcp-smoke] crashed: ${err}\n`);
-  if (err instanceof Error && err.stack) process.stderr.write(err.stack + '\n');
+  if (err instanceof Error && err.stack) process.stderr.write(`${err.stack}\n`);
   process.exit(1);
 });

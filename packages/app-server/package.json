@@ -1,0 +1,33 @@
+{
+  "name": "@commerce-mcp/app-server",
+  "version": "0.1.0",
+  "description": "ChatGPT Apps-compatible HTTP MCP server for Commerce MCP",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "commerce-mcp-app": "./dist/bin/commerce-mcp-app.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/bin/commerce-mcp-app.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@commerce-mcp/core": "*",
+    "@commerce-mcp/trendyol": "*",
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "express": "^5.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3"
+  }
+}

@@ -1,3 +1,5 @@
+import type { ClaimsFilter, ReturnClaim } from '../domain/claim.js';
+import type { BatchResult, PriceInventoryUpdate } from '../domain/inventory.js';
 import type {
   CancelItemsInput,
   OrdersFilter,
@@ -5,22 +7,8 @@ import type {
   UnifiedOrder,
   UpdateStatusInput,
 } from '../domain/order.js';
-import type {
-  Category,
-  ProductFilter,
-  ProductLookup,
-  UnifiedProduct,
-} from '../domain/product.js';
-import type {
-  BatchResult,
-  PriceInventoryUpdate,
-} from '../domain/inventory.js';
-import type {
-  CustomerQuestion,
-  QuestionReplyInput,
-  QuestionsFilter,
-} from '../domain/question.js';
-import type { ClaimsFilter, ReturnClaim } from '../domain/claim.js';
+import type { Category, ProductFilter, ProductLookup, UnifiedProduct } from '../domain/product.js';
+import type { CustomerQuestion, QuestionReplyInput, QuestionsFilter } from '../domain/question.js';
 import type { ShipmentProvider } from '../domain/shipping.js';
 
 export interface ListResult<T> {

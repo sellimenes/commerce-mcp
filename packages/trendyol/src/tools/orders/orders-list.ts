@@ -2,12 +2,15 @@ import { ORDER_STATUSES, errorResult, jsonResult, toLLMErrorMessage } from '@com
 import type { MarketplaceAdapter } from '@commerce-mcp/core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { readMeta, readOnlyAnnotations } from '../shared/metadata.js';
 
 const inputSchema = {
   status: z
     .array(z.enum(ORDER_STATUSES))
     .optional()
-    .describe('Filter by status. Common: Created (yeni sipariş), Picking (hazırlanıyor), Shipped (kargoda), Delivered.'),
+    .describe(
+      'Filter by status. Common: Created (yeni sipariş), Picking (hazırlanıyor), Shipped (kargoda), Delivered.',
+    ),
   startDate: z
     .string()
     .datetime()
@@ -24,10 +27,12 @@ export function register(server: McpServer, adapter: MarketplaceAdapter): void {
     {
       title: 'List orders / Sipariş listesi',
       description:
-        'List shipment packages with optional status and date filters. ' +
+        'Use this when the user wants to inspect Trendyol shipment packages, order totals, statuses, or line items with optional status and date filters. ' +
         'Sipariş paketlerini status ve tarih filtreleriyle listele. ' +
         'Returns paginated UnifiedOrder objects with line items.',
       inputSchema,
+      annotations: readOnlyAnnotations,
+      _meta: readMeta(),
     },
     async (args) => {
       try {

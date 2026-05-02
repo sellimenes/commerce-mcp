@@ -2,9 +2,10 @@ import { errorResult, jsonResult, toLLMErrorMessage } from '@commerce-mcp/core';
 import type { MarketplaceAdapter } from '@commerce-mcp/core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { readMeta, readOnlyAnnotations } from '../shared/metadata.js';
 
 const inputSchema = {
-  batchId: z.string().min(1).describe('Batch id returned by inventory_update.'),
+  batchId: z.string().min(1).describe('Batch id returned by execute_inventory_update.'),
 };
 
 export function register(server: McpServer, adapter: MarketplaceAdapter): void {
@@ -13,10 +14,12 @@ export function register(server: McpServer, adapter: MarketplaceAdapter): void {
     {
       title: 'Batch status / Toplu işlem durumu',
       description:
-        'Poll the result of an asynchronous batch operation. ' +
+        'Use this when the user wants to check the result of an asynchronous Trendyol batch operation. ' +
         'Asenkron toplu işlemin durumunu sorgula. ' +
         'Returns status (created/processing/completed/failed) and per-item results when completed.',
       inputSchema,
+      annotations: readOnlyAnnotations,
+      _meta: readMeta(),
     },
     async (args) => {
       try {

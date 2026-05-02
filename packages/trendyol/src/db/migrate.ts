@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
@@ -11,14 +11,13 @@ const here = dirname(fileURLToPath(import.meta.url));
  *   dist/db/migrate.js → ../../drizzle
  */
 function resolveMigrationsDir(): string {
-  const candidates = [
-    join(here, '..', '..', 'drizzle'),
-    join(here, '..', 'drizzle'),
-  ];
+  const candidates = [join(here, '..', '..', 'drizzle'), join(here, '..', 'drizzle')];
   for (const c of candidates) {
     if (existsSync(c)) return c;
   }
-  return candidates[0]!;
+  const fallback = candidates[0];
+  if (!fallback) throw new Error('No migration directory candidates configured.');
+  return fallback;
 }
 
 export function applyMigrations(dbPath: string): void {
@@ -28,7 +27,9 @@ export function applyMigrations(dbPath: string): void {
       `Drizzle migrations folder not found at ${dir}. Run \`npm run db:generate -w @commerce-mcp/trendyol\` first.`,
     );
   }
-  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
   if (files.length === 0) {
     throw new Error(`No .sql migrations found in ${dir}.`);
   }
@@ -53,7 +54,9 @@ export function applyMigrations(dbPath: string): void {
         .map((s) => s.trim())
         .filter(Boolean);
       for (const stmt of stmts) raw.exec(stmt);
-      raw.prepare('INSERT INTO __drizzle_migrations (id, applied_at) VALUES (?, ?)').run(file, Date.now());
+      raw
+        .prepare('INSERT INTO __drizzle_migrations (id, applied_at) VALUES (?, ?)')
+        .run(file, Date.now());
     });
     tx();
   }

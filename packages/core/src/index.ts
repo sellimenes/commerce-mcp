@@ -6,6 +6,7 @@ export * from './domain/question.js';
 export * from './domain/claim.js';
 export * from './domain/shipping.js';
 export * from './mcp/create-server.js';
+export * from './mcp/confirmation.js';
 export * from './mcp/tool-result.js';
 export * from './errors.js';
 export * from './logger.js';

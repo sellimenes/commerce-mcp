@@ -2,6 +2,7 @@ import { errorResult, jsonResult, toLLMErrorMessage } from '@commerce-mcp/core';
 import type { MarketplaceAdapter } from '@commerce-mcp/core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { readMeta, readOnlyAnnotations } from '../shared/metadata.js';
 
 const inputSchema = {
   status: z
@@ -20,10 +21,12 @@ export function register(server: McpServer, adapter: MarketplaceAdapter): void {
     {
       title: 'List customer questions / Müşteri soruları',
       description:
-        'List customer questions. Default status is none (returns all). ' +
+        'Use this when the user wants to inspect Trendyol customer questions, unanswered questions, or Q&A history. Default status is none (returns all). ' +
         'Müşteri sorularını listele. Cevap bekleyenler için status=WAITING_FOR_ANSWER ver. ' +
         'Date range max 14 days (Trendyol API limit).',
       inputSchema,
+      annotations: readOnlyAnnotations,
+      _meta: readMeta(),
     },
     async (args) => {
       try {

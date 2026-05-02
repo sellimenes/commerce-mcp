@@ -2,6 +2,7 @@ import { errorResult, jsonResult, toLLMErrorMessage } from '@commerce-mcp/core';
 import type { MarketplaceAdapter } from '@commerce-mcp/core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { readMeta, readOnlyAnnotations } from '../shared/metadata.js';
 
 const inputSchema = {
   approved: z
@@ -20,9 +21,11 @@ export function register(server: McpServer, adapter: MarketplaceAdapter): void {
     {
       title: 'List products / Ürün listesi',
       description:
-        'List products with optional filters. ' +
+        'Use this when the user wants to inspect Trendyol products, stock, prices, approval state, barcodes, or SKUs with optional filters. ' +
         'Ürünleri filtreleyerek listele (onay durumu, barkod, stok kodu).',
       inputSchema,
+      annotations: readOnlyAnnotations,
+      _meta: readMeta(),
     },
     async (args) => {
       try {

@@ -32,12 +32,14 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info({ tools: 13, mode: env.useMock ? 'mock' : 'http' }, 'trendyol-mcp ready on stdio');
+  logger.info({ mode: env.useMock ? 'mock' : 'http' }, 'trendyol-mcp ready on stdio');
 }
 
 main().catch((err) => {
   // Stderr is safe; stdout would corrupt MCP framing.
-  process.stderr.write(`[trendyol-mcp] fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+  process.stderr.write(
+    `[trendyol-mcp] fatal: ${err instanceof Error ? err.message : String(err)}\n`,
+  );
   if (err instanceof Error && err.stack) {
     process.stderr.write(`${err.stack}\n`);
   }

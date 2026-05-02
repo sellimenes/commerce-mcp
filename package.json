@@ -4,12 +4,11 @@
   "private": true,
   "description": "MCP servers for Turkish e-commerce marketplaces (Trendyol, Hepsiburada, ...)",
   "type": "module",
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": ["packages/*"],
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc -b --clean && rm -rf packages/*/dist",
+    "dev:app": "npm run dev --workspace @commerce-mcp/app-server",
     "dev:trendyol": "npm run dev --workspace @commerce-mcp/trendyol",
     "seed:trendyol": "npm run seed --workspace @commerce-mcp/trendyol",
     "db:generate:trendyol": "npm run db:generate --workspace @commerce-mcp/trendyol",

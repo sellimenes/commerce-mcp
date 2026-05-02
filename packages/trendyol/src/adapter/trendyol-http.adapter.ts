@@ -1,8 +1,4 @@
-import {
-  type MarketplaceAdapter,
-  type Platform,
-  UpstreamError,
-} from '@commerce-mcp/core';
+import { type MarketplaceAdapter, type Platform, UpstreamError } from '@commerce-mcp/core';
 import type { TrendyolHttpClient } from './http-client.js';
 
 /**
@@ -44,10 +40,14 @@ export class TrendyolHttpAdapter implements MarketplaceAdapter {
       throw new UpstreamError('TrendyolHttpAdapter.orders.ship not implemented yet (Phase 3).');
     },
     cancelItems: async (): Promise<never> => {
-      throw new UpstreamError('TrendyolHttpAdapter.orders.cancelItems not implemented yet (Phase 3).');
+      throw new UpstreamError(
+        'TrendyolHttpAdapter.orders.cancelItems not implemented yet (Phase 3).',
+      );
     },
     updateStatus: async (): Promise<never> => {
-      throw new UpstreamError('TrendyolHttpAdapter.orders.updateStatus not implemented yet (Phase 3).');
+      throw new UpstreamError(
+        'TrendyolHttpAdapter.orders.updateStatus not implemented yet (Phase 3).',
+      );
     },
   } as MarketplaceAdapter['orders'];
 
@@ -59,16 +59,22 @@ export class TrendyolHttpAdapter implements MarketplaceAdapter {
       throw new UpstreamError('TrendyolHttpAdapter.products.get not implemented yet (Phase 3).');
     },
     listCategories: async (): Promise<never> => {
-      throw new UpstreamError('TrendyolHttpAdapter.products.listCategories not implemented yet (Phase 3).');
+      throw new UpstreamError(
+        'TrendyolHttpAdapter.products.listCategories not implemented yet (Phase 3).',
+      );
     },
   } as MarketplaceAdapter['products'];
 
   readonly inventory = {
     update: async (): Promise<never> => {
-      throw new UpstreamError('TrendyolHttpAdapter.inventory.update not implemented yet (Phase 3).');
+      throw new UpstreamError(
+        'TrendyolHttpAdapter.inventory.update not implemented yet (Phase 3).',
+      );
     },
     batchStatus: async (): Promise<never> => {
-      throw new UpstreamError('TrendyolHttpAdapter.inventory.batchStatus not implemented yet (Phase 3).');
+      throw new UpstreamError(
+        'TrendyolHttpAdapter.inventory.batchStatus not implemented yet (Phase 3).',
+      );
     },
   } as MarketplaceAdapter['inventory'];
 
@@ -89,7 +95,9 @@ export class TrendyolHttpAdapter implements MarketplaceAdapter {
 
   readonly shipmentProviders = {
     list: async (): Promise<never> => {
-      throw new UpstreamError('TrendyolHttpAdapter.shipmentProviders.list not implemented yet (Phase 3).');
+      throw new UpstreamError(
+        'TrendyolHttpAdapter.shipmentProviders.list not implemented yet (Phase 3).',
+      );
     },
   } as MarketplaceAdapter['shipmentProviders'];
 }

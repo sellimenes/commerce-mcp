@@ -2,10 +2,19 @@ import { errorResult, jsonResult, toLLMErrorMessage } from '@commerce-mcp/core';
 import type { MarketplaceAdapter } from '@commerce-mcp/core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { readMeta, readOnlyAnnotations } from '../shared/metadata.js';
 
 const inputSchema = {
   status: z
-    .enum(['Created', 'WaitingInAction', 'Accepted', 'Rejected', 'Cancelled', 'InAnalysis', 'Unresolved'])
+    .enum([
+      'Created',
+      'WaitingInAction',
+      'Accepted',
+      'Rejected',
+      'Cancelled',
+      'InAnalysis',
+      'Unresolved',
+    ])
     .optional()
     .describe('Filter by claim status.'),
   startDate: z.string().datetime().optional(),
@@ -20,9 +29,11 @@ export function register(server: McpServer, adapter: MarketplaceAdapter): void {
     {
       title: 'List claims / İade taleplerini listele',
       description:
-        'List return/claim requests with optional filters. ' +
+        'Use this when the user wants to inspect Trendyol return or claim requests with optional status and date filters. ' +
         'İade ve değişim taleplerini listele.',
       inputSchema,
+      annotations: readOnlyAnnotations,
+      _meta: readMeta(),
     },
     async (args) => {
       try {

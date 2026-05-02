@@ -24,7 +24,7 @@ import {
   ValidationError,
   logger,
 } from '@commerce-mcp/core';
-import { and, asc, count, desc, eq, gte, inArray, lte, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { DrizzleDb } from '../db/client.js';
 import {
   apiLogs,
@@ -64,7 +64,13 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
     this.shipmentProviders = this.makeShipmentProviders();
   }
 
-  private logCall(toolName: string, request: unknown, response: unknown, latencyMs: number, error?: string): void {
+  private logCall(
+    toolName: string,
+    request: unknown,
+    response: unknown,
+    latencyMs: number,
+    error?: string,
+  ): void {
     try {
       this.db
         .insert(apiLogs)
@@ -89,7 +95,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         if (filter.endDate) conditions.push(lte(shipmentPackages.createdAt, filter.endDate));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-        const totalRow = await this.db.select({ c: count() }).from(shipmentPackages).where(where ?? undefined).all();
+        const totalRow = await this.db
+          .select({ c: count() })
+          .from(shipmentPackages)
+          .where(where ?? undefined)
+          .all();
         const totalElements = totalRow[0]?.c ?? 0;
 
         const rows = await this.db
@@ -104,7 +114,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         const packageIds = rows.map((r) => r.packageId);
         const items =
           packageIds.length > 0
-            ? await this.db.select().from(orderItems).where(inArray(orderItems.packageId, packageIds)).all()
+            ? await this.db
+                .select()
+                .from(orderItems)
+                .where(inArray(orderItems.packageId, packageIds))
+                .all()
             : [];
 
         const itemsByPackage = new Map<number, typeof items>();
@@ -114,7 +128,9 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
           itemsByPackage.set(it.packageId, list);
         }
 
-        const orders: UnifiedOrder[] = rows.map((r) => this.toUnifiedOrder(r, itemsByPackage.get(r.packageId) ?? []));
+        const orders: UnifiedOrder[] = rows.map((r) =>
+          this.toUnifiedOrder(r, itemsByPackage.get(r.packageId) ?? []),
+        );
 
         return {
           items: orders,
@@ -132,7 +148,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
           .where(eq(shipmentPackages.packageId, packageId))
           .get();
         if (!row) return null;
-        const items = await this.db.select().from(orderItems).where(eq(orderItems.packageId, packageId)).all();
+        const items = await this.db
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.packageId, packageId))
+          .all();
         return this.toUnifiedOrder(row, items);
       },
 
@@ -197,7 +217,9 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
           .all();
 
         const targetIds = new Set(input.items.map((i) => i.orderLineItemId));
-        const unknown = [...targetIds].filter((id) => !allItems.some((it) => it.orderLineItemId === id));
+        const unknown = [...targetIds].filter(
+          (id) => !allItems.some((it) => it.orderLineItemId === id),
+        );
         if (unknown.length > 0) {
           throw new ValidationError(`Unknown orderLineItemId(s): ${unknown.join(', ')}`);
         }
@@ -206,11 +228,15 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
           await this.db
             .update(orderItems)
             .set({ status: 'Cancelled' })
-            .where(and(eq(orderItems.packageId, input.packageId), eq(orderItems.orderLineItemId, id)))
+            .where(
+              and(eq(orderItems.packageId, input.packageId), eq(orderItems.orderLineItemId, id)),
+            )
             .run();
         }
 
-        const remaining = allItems.filter((it) => !targetIds.has(it.orderLineItemId) && it.status !== 'Cancelled');
+        const remaining = allItems.filter(
+          (it) => !targetIds.has(it.orderLineItemId) && it.status !== 'Cancelled',
+        );
         if (remaining.length === 0) {
           await this.db
             .update(shipmentPackages)
@@ -261,7 +287,10 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
     };
   }
 
-  private toUnifiedOrder(row: typeof shipmentPackages.$inferSelect, itemRows: (typeof orderItems.$inferSelect)[]): UnifiedOrder {
+  private toUnifiedOrder(
+    row: typeof shipmentPackages.$inferSelect,
+    itemRows: (typeof orderItems.$inferSelect)[],
+  ): UnifiedOrder {
     const addr = row.shipmentAddress;
     return {
       packageId: row.packageId,
@@ -273,7 +302,9 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
       currency: row.currency,
       cargoTrackingNumber: row.cargoTrackingNumber ?? undefined,
       cargoProviderName: row.cargoProviderName ?? undefined,
-      shipmentAddress: isObject(addr) ? (addr as unknown as UnifiedOrder['shipmentAddress']) : undefined,
+      shipmentAddress: isObject(addr)
+        ? (addr as unknown as UnifiedOrder['shipmentAddress'])
+        : undefined,
       createdAt: row.createdAt,
       lastModifiedAt: row.lastModifiedAt,
       items: itemRows.map((it) => ({
@@ -299,7 +330,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         if (filter.stockCode) conditions.push(eq(products.stockCode, filter.stockCode));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-        const totalRow = await this.db.select({ c: count() }).from(products).where(where ?? undefined).all();
+        const totalRow = await this.db
+          .select({ c: count() })
+          .from(products)
+          .where(where ?? undefined)
+          .all();
         const totalElements = totalRow[0]?.c ?? 0;
 
         const rows = await this.db
@@ -314,10 +349,16 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         const brandIds = [...new Set(rows.map((r) => r.brandId))];
         const categoryIds = [...new Set(rows.map((r) => r.categoryId))];
         const brandRows =
-          brandIds.length > 0 ? await this.db.select().from(brands).where(inArray(brands.id, brandIds)).all() : [];
+          brandIds.length > 0
+            ? await this.db.select().from(brands).where(inArray(brands.id, brandIds)).all()
+            : [];
         const categoryRows =
           categoryIds.length > 0
-            ? await this.db.select().from(categories).where(inArray(categories.id, categoryIds)).all()
+            ? await this.db
+                .select()
+                .from(categories)
+                .where(inArray(categories.id, categoryIds))
+                .all()
             : [];
         const brandMap = new Map(brandRows.map((b) => [b.id, b.name] as const));
         const categoryMap = new Map(categoryRows.map((c) => [c.id, c.name] as const));
@@ -338,22 +379,33 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         if (input.barcode && input.productMainId) {
           throw new ValidationError('Provide barcode XOR productMainId, not both.');
         }
+        const productMainId = input.productMainId;
         const where = input.barcode
           ? eq(products.barcode, input.barcode)
-          : eq(products.productMainId, input.productMainId!);
+          : eq(products.productMainId, productMainId ?? '');
         const row = await this.db.select().from(products).where(where).get();
         if (!row) return null;
         const brand = await this.db.select().from(brands).where(eq(brands.id, row.brandId)).get();
-        const cat = await this.db.select().from(categories).where(eq(categories.id, row.categoryId)).get();
+        const cat = await this.db
+          .select()
+          .from(categories)
+          .where(eq(categories.id, row.categoryId))
+          .get();
         const brandMap = new Map(brand ? [[brand.id, brand.name]] : []);
         const categoryMap = new Map(cat ? [[cat.id, cat.name]] : []);
         return this.toUnifiedProduct(row, brandMap, categoryMap);
       },
 
       listCategories: async (input: { parentId?: number }): Promise<Category[]> => {
-        const rows = input.parentId !== undefined
-          ? await this.db.select().from(categories).where(eq(categories.parentId, input.parentId)).orderBy(asc(categories.name)).all()
-          : await this.db.select().from(categories).orderBy(asc(categories.name)).all();
+        const rows =
+          input.parentId !== undefined
+            ? await this.db
+                .select()
+                .from(categories)
+                .where(eq(categories.parentId, input.parentId))
+                .orderBy(asc(categories.name))
+                .all()
+            : await this.db.select().from(categories).orderBy(asc(categories.name)).all();
         return rows.map((r) => ({ id: r.id, name: r.name, parentId: r.parentId ?? null }));
       },
     };
@@ -383,7 +435,8 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
     if (brandName) result.brandName = brandName;
     const categoryName = categoryMap.get(row.categoryId);
     if (categoryName) result.categoryName = categoryName;
-    if (row.attributes && isObject(row.attributes)) result.attributes = row.attributes as Record<string, unknown>;
+    if (row.attributes && isObject(row.attributes))
+      result.attributes = row.attributes as Record<string, unknown>;
     return result;
   }
 
@@ -396,7 +449,13 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         const now = new Date();
         await this.db
           .insert(batchRequests)
-          .values({ id: batchId, type: 'price-inventory', status: 'created', itemCount: input.items.length, createdAt: now })
+          .values({
+            id: batchId,
+            type: 'price-inventory',
+            status: 'created',
+            itemCount: input.items.length,
+            createdAt: now,
+          })
           .run();
 
         // Schedule async transitions: created (0s) → processing (~1s) → completed (~3s)
@@ -411,7 +470,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         setTimeout(async () => {
           const results: { barcode: string; success: boolean; message?: string }[] = [];
           for (const item of input.items) {
-            const exists = await this.db.select().from(products).where(eq(products.barcode, item.barcode)).get();
+            const exists = await this.db
+              .select()
+              .from(products)
+              .where(eq(products.barcode, item.barcode))
+              .get();
             if (!exists) {
               results.push({ barcode: item.barcode, success: false, message: 'Barcode not found' });
               continue;
@@ -422,7 +485,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
             if (item.listPrice !== undefined) updates.listPrice = item.listPrice;
             // Mock realism: 5% random failure injection
             if (Math.random() < 0.05) {
-              results.push({ barcode: item.barcode, success: false, message: 'Simulated upstream error' });
+              results.push({
+                barcode: item.barcode,
+                success: false,
+                message: 'Simulated upstream error',
+              });
               continue;
             }
             // listPrice >= salePrice rule
@@ -436,7 +503,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
               });
               continue;
             }
-            await this.db.update(products).set(updates).where(eq(products.barcode, item.barcode)).run();
+            await this.db
+              .update(products)
+              .set(updates)
+              .where(eq(products.barcode, item.barcode))
+              .run();
             results.push({ barcode: item.barcode, success: true });
           }
           this.db
@@ -450,7 +521,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
       },
 
       batchStatus: async (input: { batchId: string }): Promise<BatchResult | null> => {
-        const row = await this.db.select().from(batchRequests).where(eq(batchRequests.id, input.batchId)).get();
+        const row = await this.db
+          .select()
+          .from(batchRequests)
+          .where(eq(batchRequests.id, input.batchId))
+          .get();
         if (!row) return null;
         return {
           batchId: row.id,
@@ -482,7 +557,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         if (filter.endDate) conditions.push(lte(questions.createdAt, filter.endDate));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-        const totalRow = await this.db.select({ c: count() }).from(questions).where(where ?? undefined).all();
+        const totalRow = await this.db
+          .select({ c: count() })
+          .from(questions)
+          .where(where ?? undefined)
+          .all();
         const totalElements = totalRow[0]?.c ?? 0;
 
         const rows = await this.db
@@ -527,7 +606,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         if (input.text.length < 5 || input.text.length > 500) {
           throw new ValidationError('Reply text must be between 5 and 500 characters.');
         }
-        const q = await this.db.select().from(questions).where(eq(questions.id, input.questionId)).get();
+        const q = await this.db
+          .select()
+          .from(questions)
+          .where(eq(questions.id, input.questionId))
+          .get();
         if (!q) throw new NotFoundError(`Question ${input.questionId} not found`);
         if (q.status !== 'WAITING_FOR_ANSWER') {
           throw new ValidationError(`Question is already in status "${q.status}".`);
@@ -554,7 +637,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
         if (filter.endDate) conditions.push(lte(claims.createdAt, filter.endDate));
         const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-        const totalRow = await this.db.select({ c: count() }).from(claims).where(where ?? undefined).all();
+        const totalRow = await this.db
+          .select({ c: count() })
+          .from(claims)
+          .where(where ?? undefined)
+          .all();
         const totalElements = totalRow[0]?.c ?? 0;
 
         const rows = await this.db
@@ -593,7 +680,11 @@ export class TrendyolMockAdapter implements MarketplaceAdapter {
   private makeShipmentProviders() {
     return {
       list: async (): Promise<ShipmentProvider[]> => {
-        const rows = await this.db.select().from(shipmentProviders).orderBy(asc(shipmentProviders.name)).all();
+        const rows = await this.db
+          .select()
+          .from(shipmentProviders)
+          .orderBy(asc(shipmentProviders.name))
+          .all();
         return rows.map((r) => {
           const provider: ShipmentProvider = { id: r.id, code: r.code, name: r.name };
           if (r.taxNumber) provider.taxNumber = r.taxNumber;

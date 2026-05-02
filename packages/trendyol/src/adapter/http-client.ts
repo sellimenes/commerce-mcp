@@ -1,4 +1,3 @@
-import axios, { type AxiosInstance } from 'axios';
 import {
   AuthError,
   type Logger,
@@ -9,6 +8,7 @@ import {
   ValidationError,
   sleep,
 } from '@commerce-mcp/core';
+import axios, { type AxiosInstance } from 'axios';
 
 export interface TrendyolHttpOptions {
   baseUrl: string;
@@ -40,7 +40,12 @@ export class TrendyolHttpClient {
 
   private readonly logger: Logger;
 
-  async request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown, params?: Record<string, unknown>): Promise<T> {
+  async request<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: unknown,
+    params?: Record<string, unknown>,
+  ): Promise<T> {
     await this.bucket.take();
     try {
       const res = await this.axios.request<T>({ method, url: path, data: body, params });
@@ -50,7 +55,10 @@ export class TrendyolHttpClient {
         const status = err.response?.status;
         const data = err.response?.data;
         if (status === 401 || status === 403) {
-          throw new AuthError(`Trendyol auth failed (${status}). Check credentials and User-Agent.`, err);
+          throw new AuthError(
+            `Trendyol auth failed (${status}). Check credentials and User-Agent.`,
+            err,
+          );
         }
         if (status === 404) {
           throw new NotFoundError(`Trendyol returned 404 for ${path}`, err);
@@ -65,7 +73,10 @@ export class TrendyolHttpClient {
             const retry = await this.axios.request<T>({ method, url: path, data: body, params });
             return retry.data;
           } catch (retryErr) {
-            throw new RateLimitError('Trendyol rate limit (50 req / 10s) hit. Slow down.', retryErr);
+            throw new RateLimitError(
+              'Trendyol rate limit (50 req / 10s) hit. Slow down.',
+              retryErr,
+            );
           }
         }
         throw new UpstreamError(`Trendyol HTTP ${status ?? 'error'}: ${err.message}`, err);
